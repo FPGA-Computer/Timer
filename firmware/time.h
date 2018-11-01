@@ -57,7 +57,7 @@ void Print_Time(time_hms_t *time,uint8_t display_sec);
 // TIM: 6MHz/24000 = 250Hz, 4ms
 
 #define TIM1_PRESCALER		1UL
-#define TIM1_RELOAD				48000UL
+#define TIM1_RELOAD				60000UL
 #define TICKS_PER_SEC			(CPU_CLOCK/TIM1_PRESCALER/TIM1_RELOAD)
 
 #define TIM1_PSCR_H				((TIM1_PRESCALER-1) >> 8)

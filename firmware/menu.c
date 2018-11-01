@@ -41,7 +41,7 @@ const UI_Item_t LED_Setting[]=
 
 const UI_Menu_t LED_Menu=
 {//0---4----9----4-
-	"A    :   +  m  s"
+	"@    :   +  m  s"
 	"ADC>     +  h  m"
 	,LED_Setting,sizeof(LED_Setting)/sizeof(UI_Item_t)
 };
