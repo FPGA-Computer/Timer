@@ -65,7 +65,7 @@ const UI_Item_t RTC_Setting[]=
 	{&TimeSetting.min,&TimeModified,SET_TIME_X+4,SET_TIME_Y,2,0,59,D_U8Z},
 	{&TimeSetting.sec,&TimeModified,SET_TIME_X+7,SET_TIME_Y,2,0,59,D_U8Z},
 	{"Alarm",(uint8_t*)&LED_Menu,SET_LED_X,SET_LED_Y,5,0,0,D_Menu},
-	{"Trim",(uint8_t*)&TrimMenu,SET_TRIM_X,SET_TRIM_Y,5,0,0,D_Menu},
+	{"Trim",(uint8_t*)&TrimMenu,SET_TRIM_X,SET_TRIM_Y,4,0,0,D_Menu},
 };
 
 const UI_Menu_t SettingMenu=
