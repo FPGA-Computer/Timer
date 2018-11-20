@@ -48,12 +48,12 @@
 
 #define SET_TRIM_X		0
 #define SET_TRIM_Y		1
-#define TRIMP_X				6
-#define TRIMP_Y				0
-#define TRIMN_X				12
-#define TRIMN_Y				0
+#define TRIMS_X				5
+#define TRIMS_Y				0
+#define TRIMV_X				6
+#define TRIMV_Y				0
 
 void Setup(void);
-
+void Display_Trim(UI_Item_t *Item);
 
 #endif

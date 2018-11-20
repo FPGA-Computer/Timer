@@ -48,6 +48,9 @@ void Init_Hardware(void)
 	PERIPH_PORT->DDR |= MOTOR_EN|LED_EN;
 	PERIPH_PORT->CR1 |= MOTOR_EN|LED_EN;
 	
+	// Wait for power to be stabilized
+	Delay(0);
+	
 	// Init peripherals
 	LCD_Init();
 	ADC_Init();

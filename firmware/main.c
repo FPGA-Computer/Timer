@@ -27,13 +27,12 @@ void DisplayTask(void)
 {
 	LCD_Moveto(CLOCK_X,CLOCK_Y);
 	Print_Time(&time,DISPLAY_SEC);
-
+	LCD_Puts(" \x0b");
+	Print_uint(ADC.Result[ADC_Sense],4,RightJustify);
+	
   LCD_Moveto(STATUS_X,STATUS_Y);
 	LCD_Puts((PERIPH_PORT->ODR & LED_EN)?"LED ":"    ");
 	LCD_Puts((PERIPH_PORT->ODR & MOTOR_EN)?"    ":"Pump");
-	LCD_Moveto(9,1);
-	LCD_Puts("ADC");
-	Print_uint(ADC.Result[ADC_Sense],4,LeftJustify);
 }
 
 void main(void)

@@ -62,8 +62,10 @@ void Key_Task(void)
 		{
 			if(key.count == KEY_CNT_MAX)
 			{	
+				if(!(new_code&KEY_MENU))						// no auto-repeat for menu key
+					key.count = KEY_RELOAD;
+				
 				key.code |= KEY_LONG|KEY_FLAG;
-				key.count = KEY_RELOAD;
 			}
 			else
 				key.count++;

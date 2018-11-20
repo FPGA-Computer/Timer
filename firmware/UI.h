@@ -46,10 +46,11 @@ typedef struct
 } UI_Menu_t;
 
 typedef void (*FuncPtr)(void);
+typedef void (*FuncPtr_arg)(void *);
 
 enum Gfx_Put_Format
 {
-	LeftJustify = 0x02, LeadingZero = 0x01
+	RightJustify = 0x02, LeadingZero = 0x01
 };
 
 void LCD_Hex(uint8_t n);
@@ -64,6 +65,6 @@ uint8_t UI_Menu(UI_Menu_t *Menu);
 
 #define UI_LARGE_STEP		10
 
-enum DataFlags { D_12H, D_U8, D_U8Z, D_U16, D_Menu, D_Function };
+enum DataFlags { D_12H, D_U8, D_U8Z, D_U16, D_Menu, D_Function, D_CustomData };
 
 #endif

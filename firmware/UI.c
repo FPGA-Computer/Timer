@@ -40,7 +40,7 @@ void Print_uint(uint16_t Value, uint8_t width, uint8_t Format)
       LCD_Ch('0'+Value/Div);
       Value %= Div;
      }
-    else if(Format & LeftJustify)
+    else if(Format & RightJustify)
 			LCD_Ch(' ');
 
     Div /= 10;
@@ -49,7 +49,7 @@ void Print_uint(uint16_t Value, uint8_t width, uint8_t Format)
 
 void Print2d(uint8_t Value,uint8_t Format)
 {
-	Print_uint(Value,2,Format|LeftJustify);
+	Print_uint(Value,2,Format|RightJustify);
 }
 
 void UI_Puts_n(char *str, uint8_t width)
@@ -73,14 +73,17 @@ void UI_PrintItem(UI_Item_t *Item, uint8_t Display)
 				break;
 			case D_U8:
 			case D_U8Z:
-				Print_uint(*(uint8_t*)Item->Value,Item->Width,LeftJustify|(Item->Flags==D_U8Z));
+				Print_uint(*(uint8_t*)Item->Value,Item->Width,RightJustify|(Item->Flags==D_U8Z));
 				break;
 			case D_U16:
-				Print_uint(*(uint16_t*)Item->Value,Item->Width,LeftJustify);
+				Print_uint(*(uint16_t*)Item->Value,Item->Width,RightJustify);
 				break;				
 			case D_Menu:
 			case D_Function:
 				UI_Puts_n(Item->Value,Item->Width);
+				break;
+			case D_CustomData:
+				((FuncPtr_arg)Item->Modified)(Item);
 				break;
 		}
 	}
@@ -178,7 +181,6 @@ uint8_t UI_EditItem(UI_Item_t *Item)
 			
 	} while (!Quit);
 
-	LCD_Cmd(_LCD_ON|_LCD_DISPLAY_ON);
 	Key_Purge();
 	return(Changed);
 }

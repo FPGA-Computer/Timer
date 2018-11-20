@@ -87,6 +87,6 @@ void LCD_Puts(char *str);
 #define _LCD_INIT_DELAY1	4100
 #define _LCD_INIT_DELAY2	100
 
-enum LCD_Char { CH_AM = 0x08, CH_PM = 0x09, CH_ADJ = 0x0a };
+enum LCD_Char { CH_AM = 0x08, CH_PM = 0x09, CH_ADJ = 0x0a, CH_LIGHT = 0x0b };
 
 #endif

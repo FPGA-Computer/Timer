@@ -22,11 +22,27 @@
  */ 
 #include "hardware.h"
 
-
 static time_hms_t TimeSetting;
-static uint8_t Alarm1_min, Alarm1_sec, Alarm2_hour, Alarm2_min, Trim_p, Trim_n;
-static uint8_t TimeModified,TimerModified;
+static uint8_t Alarm1_min,Alarm1_sec,Alarm2_hour,Alarm2_min;
+static uint8_t TimeModified,TimerModified,Trim_Polarity,Trim_Value;
 static uint16_t Sensivity;
+
+// Custom data
+void Display_Trim(UI_Item_t *Item)
+{
+	uint16_t trim_ms;
+	
+	// handle sign
+	if(Item->Width==1)
+		LCD_Ch(*((uint8_t*)Item->Value)?'+':'-');
+	else	
+	{
+		trim_ms = *((uint8_t*)Item->Value)*TICK_RES;
+		Print2d(trim_ms/TICK_RES_DIV,0);
+		LCD_Ch('.');
+		Print2d(trim_ms%TICK_RES_DIV,LeadingZero);
+	}
+}
 
 const UI_Item_t LED_Setting[]=
 {
@@ -48,14 +64,13 @@ const UI_Menu_t LED_Menu=
 
 const UI_Item_t TRIM_Setting[]=
 {
-	{&Trim_p,&TimerModified,TRIMP_X,TRIMP_Y,3,0,127,D_U8},
-	{&Trim_n,&TimerModified,TRIMN_X,TRIMN_Y,3,0,127,D_U8}
+	{&Trim_Polarity,(uint8_t*)Display_Trim,TRIMS_X,TRIMS_Y,1,0,1,D_CustomData},
+	{&Trim_Value,(uint8_t*)Display_Trim,TRIMV_X,TRIMV_Y,5,0,63,D_CustomData},
 };
 
 const UI_Menu_t TrimMenu[]=
 {//0---4----9----4-
-	"Trim +    /-    " 
-	"* 1.44 sec/day",
+	"Trim    .  s/day",
 	TRIM_Setting,sizeof(TRIM_Setting)/sizeof(UI_Item_t)
 };
 
@@ -77,6 +92,7 @@ const UI_Menu_t SettingMenu=
 void Setup(void)
 {
 	uint16_t countdown;
+	int8_t new_trim;
 	
 	// This is smaller than a struct copy
 	TimeSetting.hour = time.hour;
@@ -88,8 +104,16 @@ void Setup(void)
 	sec2ms(Alarm.al_length1,&Alarm1_min,&Alarm1_sec);
 	sec2ms(Alarm.al_length2/60,&Alarm2_hour,&Alarm2_min);
 
-	Trim_n = (Alarm.clock_trim > 0)?Alarm.clock_trim:0;
-	Trim_p = (Alarm.clock_trim > 0)?0:Alarm.clock_trim;
+	if(Alarm.clock_trim >=0)
+	{
+		Trim_Polarity = 1;
+		Trim_Value = Alarm.clock_trim;
+	}
+	else
+	{
+		Trim_Polarity = 0;
+		Trim_Value = -Alarm.clock_trim;		
+	}
 
 	UI_Menu(&SettingMenu);
 	
@@ -102,14 +126,16 @@ void Setup(void)
 		rim();
 	}
 	
-	if(TimerModified)
-	{	
-		Alarm.al_length1=Alarm1_min*60+Alarm1_sec;
-		Alarm.al_length2=(Alarm2_hour*60+Alarm2_min)*60;
-		
-	Alarm.clock_trim = Trim_n-Trim_p;
-	Timer_Reload();
+	new_trim = Trim_Polarity?Trim_Value:-Trim_Value;
 	
-	Save_Prefs(&Alarm);
+	if(TimerModified||(new_trim!=Alarm.clock_trim))
+	{	
+		Alarm.al_length1 = Alarm1_min*60+Alarm1_sec;
+		Alarm.al_length2 = (Alarm2_hour*60+Alarm2_min)*60;
+		
+		Alarm.clock_trim = new_trim;
+		Timer_Reload();
+		
+		Save_Prefs(&Alarm);
 	}
 }

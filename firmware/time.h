@@ -59,6 +59,8 @@ void Print_Time(time_hms_t *time,uint8_t display_sec);
 #define TIM1_PRESCALER		1UL
 #define TIM1_RELOAD				60000UL
 #define TICKS_PER_SEC			(CPU_CLOCK/TIM1_PRESCALER/TIM1_RELOAD)
+#define TICK_RES					144
+#define TICK_RES_DIV			100
 
 #define TIM1_PSCR_H				((TIM1_PRESCALER-1) >> 8)
 #define TIM1_PSCR_L				((TIM1_PRESCALER-1) & 0xff)
