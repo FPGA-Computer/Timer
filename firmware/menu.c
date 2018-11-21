@@ -106,12 +106,12 @@ void Setup(void)
 
 	if(Alarm.clock_trim >=0)
 	{
-		Trim_Polarity = 1;
+		Trim_Polarity = 0;
 		Trim_Value = Alarm.clock_trim;
 	}
 	else
 	{
-		Trim_Polarity = 0;
+		Trim_Polarity = 1;
 		Trim_Value = -Alarm.clock_trim;		
 	}
 
@@ -126,7 +126,7 @@ void Setup(void)
 		rim();
 	}
 	
-	new_trim = Trim_Polarity?Trim_Value:-Trim_Value;
+	new_trim = Trim_Polarity?-Trim_Value:Trim_Value;
 	
 	if(TimerModified||(new_trim!=Alarm.clock_trim))
 	{	
