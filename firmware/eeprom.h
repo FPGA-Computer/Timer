@@ -25,24 +25,13 @@
 #ifndef EEPROM_H_
 #define EEPROM_H_
 
-enum EEPROM_ADDR
-{
-	EE_Alarm_H,
-	EE_Alarm_M,
-	EE_Count1,
-	EE_Count2_H,
-	EE_Count2_L,
-	//---
-	EE_SIZE
-};
-
 #define EE_ADDR(X)	(EE_Addr+(X))
 
-#define EE_Alarm	EE_Alarm_H
-#define EE_Count	EE_Count1
+#define EE_Alarm	0
+//#define EE_Count	EE_Count1
 
 void cpy(uint8_t *d, uint8_t *s, uint8_t n);
-void Save_Prefs(alarm_t *Prefs);
-void Load_Prefs(alarm_t *Prefs);
+void Save_Prefs(prefs_t *Prefs);
+void Load_Prefs(prefs_t *Prefs);
 
 #endif

@@ -22,135 +22,267 @@
  */ 
 #include "hardware.h"
 
-volatile uint8_t time_flag,ticks;
-volatile time_hms_t time;
-volatile alarm_t Alarm;
+volatile rtc_t time;
+volatile prefs_t Prefs;
 
-void sec2ms(uint16_t time,uint8_t *min,uint8_t *sec)
-{
-	*min = time/60;	
-	*sec = time-*min*60;
-}
-
-void Print_12Hr(uint8_t hour)
-{
-	if(hour<12)	
-		LCD_Ch(CH_AM);
-	else
-	{
-		LCD_Ch(CH_PM);
-		hour-=12;
-	}
-	if(!hour)
-		Print2d(12,0);
-	else 
-		Print2d(hour,0);
-}
-
-void Print_Time(time_hms_t *time,uint8_t display_opt)
-{
-	Print_12Hr(time->hour);
-
-	LCD_Ch(TIME_SEPARATOR);
-	Print2d(time->min,LeadingZero);
-	
-	if(display_opt & DISPLAY_SEC)
-	{
-		LCD_Ch(TIME_SEPARATOR);
-		Print2d(time->sec,LeadingZero);
-	}
-}
-
-void Timer_Reload(void)
-{
-	uint16_t ARR;
-	
-	ARR = TIM1_RELOAD+Alarm.clock_trim-1;
-	
-	// Autoreload
-	TIM1->ARRH = ARR >> 8;
-	TIM1->ARRL = ARR & 0xff;
-}
+volatile uint8_t DDS_Ticks;
+uint32_t DDS_PhaseInc;
+volatile uint32_t DDS_Accum;
 
 void Time_Init(void)
-{
-	// Master mode TRGO = Update -> ADC
-	TIM1->CR2 = (0x02)<<4;
-	// Update Interrupt
-	TIM1->IER = TIM1_IER_UIE;
-	// prescaler
+{	// prescaler
 	TIM1->PSCRH = TIM1_PSCR_H;
 	TIM1->PSCRL = TIM1_PSCR_L;
+	
 	// Preload, Counter enable
+	// Master mode TRGO = Update -> ADC
+	TIM1->CR2 = (0x02)<<4;
+
+	// Autoreload
+	TIM1->ARRH = (TIM1_RELOAD-1) >> 8;
+	TIM1->ARRL = (TIM1_RELOAD-1) & 0xff;
+
 	TIM1->CR1 = TIM1_CR1_ARPE|TIM1_CR1_CEN;
+	// Update Interrupt
+	TIM1->IER = TIM1_IER_UIE;
+
+	#ifdef DST
+		time.DST_Enable = Prefs.TimeOpt;
+	#endif
+	
+	// use DDS for clock fine adjustments
+	RTC_SetNCO(Prefs.DDS_Adj);
+	RTC_SetDate(1,1,YEAR_START);
 }
 
-void TimeTask(void)
-{
-	time.sec++;
-	
-	if(time.sec >= 60)
-	{
-		time.sec = 0;
-		time.min++;
-	
-		if(time.min >= 60)
-		{
-			time.min = 0;			
-			time.hour++;
-		}
-		if(time.hour > TIME_HR_MAX)
-			time.hour = TIME_HR_MIN;
-			
-		if((Alarm.al_hour == time.hour)&&(Alarm.al_min == time.min))
-		{
-			time.al_length1 = Alarm.al_length1;
-			time.al_length2 = Alarm.al_length2;			
-			MOTOR_ON();
-		}
-	}
-	
-	if(time.al_length1)
-	{
-		if(time.al_length1==1)
-			MOTOR_OFF();
-			
-		time.al_length1--;
-	}
-	
-	if(time.al_length2)
-	{
-		if(time.al_length2==1)
-			LED_OFF();
-		else
-		{
-			// handle on/off
-			if(ADC.Result[ADC_Sense]>Alarm.adc_threshold+ADC_HYSTERESIS)
-				LED_ON();
-			else if(ADC.Result[ADC_Sense]<Alarm.adc_threshold)
-				LED_OFF();				
-		}
-		time.al_length2--;
-	}
-}
+// RTC
 
 @far @interrupt void TIM1_IRQ(void)
 {
+	uint8_t carry;
+	
 	// clear UIF
 	TIM1->SR1 &= ~TIM1_SR1_UIF;
 	
-	if(ticks)
+	// 200Hz Timer overflow needed for ADC
+
+	if(DDS_Ticks)
 	{
-		if(ticks==TICKS_PER_SEC/2)
-			time_flag |= TIME_HALF_SEC;
+		DDS_Ticks--;
+		return;
+	}
+	
+	// manually divide IRQ to 20Hz
+	DDS_Ticks = DDS_TICKS-1;
+	
+	// tick comes from Direct Digital Synthesis
+	DDS_Accum += DDS_PhaseInc;
+	
+	if (DDS_Accum & DDS_CARRY)
+	{
+		if(time.ticks)
+		{	
+			// blink decimal point
+			if(time.ticks==(TICKS_PER_SEC/2))
+				time.HalfSec = 1;
+	
+			time.ticks--;
+		}
+		else
+		{
+			time.ticks = TICKS_PER_SEC-1;
+	
+			time.sec++;
 			
-		ticks--;
+			if(time.sec > 59)
+			{
+				time.sec = 0;
+				time.min++;
+			
+				if(time.min > 59)
+				{
+					time.min = 0;			
+					time.hour++;
+					
+					#ifdef DST
+						if(time.DST_Enable)	// check every hour on the hour
+							DST_Check();
+					#endif	
+				}
+				if(time.hour > TIME_HR_MAX)
+				{
+					time.hour = TIME_HR_MIN;
+					
+					if(time.dayofweek < 7)
+						time.dayofweek++;
+					else
+						time.dayofweek = 0;
+					
+					if(time.day<MonthDays(time.month,time.year))
+						time.day++;
+					else
+					{
+						time.day = 1;
+						
+						if(time.month <12)
+							time.month++;
+						else
+						{
+							time.month = 1;
+							time.year++;
+							RTC_AnnualUpdate();
+						}
+					}
+				}
+				
+				if((Prefs.al_hour == time.hour)&&(Prefs.al_min == time.min))
+				{
+					time.al_length1 = Prefs.al_length1;
+					time.al_length2 = Prefs.al_length2;			
+					MOTOR_ON();
+				}
+			}
+			
+			if(time.al_length1)
+			{
+				if(time.al_length1==1)
+					MOTOR_OFF();
+					
+				time.al_length1--;
+			}
+			
+			if(time.al_length2)
+			{
+				if(time.al_length2==1)
+					LED_OFF();
+				else
+				{
+					// handle on/off
+					if(ADC.Result[ADC_Sense]>Prefs.adc_threshold+ADC_HYSTERESIS)
+						LED_ON();
+					else if(ADC.Result[ADC_Sense]<Prefs.adc_threshold)
+						LED_OFF();				
+				}
+				time.al_length2--;
+			}
+	
+			time.SecFlag = 1;
+			time.FullSec = 1;
+		}	
+	}
+	
+	DDS_Accum &= DDS_MASK;
+	time.Tick = 1;
+}
+
+/* https://www.wikihow.com/Calculate-Leap-Years */
+uint8_t LeapYear(uint8_t year)
+{
+	if(year%4)
+		return(0);
+	else if(year%100)
+		return(1);
+	else if(year%400)
+		return(0);
+	else			
+		return(1);
+}
+
+void RTC_AnnualUpdate(void)
+{
+	time.LeapYear=LeapYear(time.year);
+
+	#ifdef DST
+		if(time.DST_Enable)
+		{
+			uint8_t dayofweek;
+
+			dayofweek = DayWeek(1,DST_Start_Month,time.year);
+			time.DST_Start = 1+ 7*(DST_Start_Week-1) + dayofweek;
+			dayofweek = DayWeek(1,DST_End_Month,time.year);
+			time.DST_Stop = 1+ 7*(DST_End_Week-1) + dayofweek;
+		}
+	#endif		
+}
+
+// months starts at 1
+const uint8_t MonthDays_Tbl[]= { 0,31,28,31,30,31,30,31,31,30,31,30 };
+
+uint8_t MonthDays(uint8_t month, uint16_t year)
+{
+	if((month !=2)||!time.LeapYear)
+	  return(MonthDays_Tbl[month]);
+	else
+		return(29);
+}
+
+/*
+	https://en.wikipedia.org/wiki/Determination_of_the_day_of_the_week
+	Sakamoto's methods
+*/
+uint8_t DayWeek(uint8_t Day, uint8_t Month, uint16_t Year)
+{
+	const uint8_t t[] = {0, 3, 2, 5, 0, 3, 5, 1, 4, 6, 2, 4};
+	uint16_t y;
+
+	y = Year - (Month < 3);
+	return ((y + y/4 - y/100 + y/400 + t[Month-1] + Day) % 7);
+}
+
+#ifdef DST
+
+void DST_Check(void)
+{
+	if(time.DST_Active)
+	{
+		if(	(time.month == DST_End_Month)&&
+				(time.day == time.DST_Stop)&&
+				(time.hour == DST_ChangeTime) )
+		{
+			time.hour --;
+			time.DST_Active = 0;
+		}
 	}
 	else
 	{
-		ticks = TICKS_PER_SEC-1;
-		TimeTask();
-
-		time_flag |= TIME_SEC_FLAG|TIME_FULL_SEC;
+		if(	(time.month == DST_Start_Month)&&
+				(time.day == time.DST_Start)&&
+				(time.hour == DST_ChangeTime) )
+		{
+			time.hour ++;
+			time.DST_Active = 1;
+		}
 	}
+}
+
+#endif		
+
+void RTC_SetNCO(int16_t Adj)
+{
+	// use DDS for clock fine adjustments
+	DDS_PhaseInc = DDS_INC + Adj;
+}
+
+void RTC_SetTime(uint8_t Hour, uint8_t Min, uint8_t Sec)
+{
+	sim();
+	time.hour =	Hour;
+	time.min =	Min;	
+	time.sec =	Sec;
+	time.ticks = TICKS_PER_SEC-1;
+	rim();
+}
+
+void RTC_SetDate(uint8_t Day, uint8_t Month, uint16_t Year)
+{	
+	uint8_t dayofweek;
+
+	dayofweek=DayWeek(Day,Month,Year);
+	sim();
+	time.dayofweek = dayofweek;
+	time.day = Day;
+	time.month = Month;	
+	time.year =	Year;
+	RTC_AnnualUpdate();
+	rim();
 }

@@ -51,11 +51,63 @@ void Print2d(uint8_t Value,uint8_t Format)
 {
 	Print_uint(Value,2,Format|RightJustify);
 }
+void sec2ms(uint16_t time,uint8_t *min,uint8_t *sec)
+{
+	*min = time/60;	
+	*sec = time-*min*60;
+}
 
 void UI_Puts_n(char *str, uint8_t width)
 {
 	while(width--)
 		LCD_Ch(*str?*str++:' ');
+}
+
+void Print_12Hr(uint8_t hour)
+{
+	if(hour<12)	
+		LCD_Ch(CH_AM);
+	else
+	{
+		LCD_Ch(CH_PM);
+		hour-=12;
+	}
+	if(!hour)
+		Print2d(12,0);
+	else 
+		Print2d(hour,0);
+}
+
+void Print_Time(rtc_t *time,uint8_t display_opt)
+{
+	Print_12Hr(time->hour);
+
+	LCD_Ch(TIME_SEPARATOR);
+	Print2d(time->min,LeadingZero);
+	
+	if(display_opt & DISPLAY_SEC)
+	{
+		LCD_Ch(TIME_SEPARATOR);
+		Print2d(time->sec,LeadingZero);
+	}
+}
+
+void Print_Month(uint8_t month, uint8_t width)
+{
+	const uint8_t *Month[] = { "Jan","Feb","Mar","Apr","May","Jun",
+														 "Jul","Aug","Sep","Oct","Nov","Dec" };
+  UI_Puts_n(Month[month-1],width);		
+}
+
+void Print_Date(rtc_t *time,uint8_t display_opt)
+{ 
+	const uint8_t *DayOfWeek[]= { "Su", "Mo", "Tu", "We", "Th", "Fr", "Sa" };	
+	
+  UI_Puts_n(DayOfWeek[time->dayofweek],DOW_WIDTH);
+	LCD_Ch(DOW_SEPARATOR);
+	Print2d(time->day,0);
+	LCD_Ch(DATE_SEPARATOR);
+	Print_Month(time->month,MONTH_WIDTH);
 }
 
 void UI_PrintItem(UI_Item_t *Item, uint8_t Display)
@@ -77,13 +129,20 @@ void UI_PrintItem(UI_Item_t *Item, uint8_t Display)
 				break;
 			case D_U16:
 				Print_uint(*(uint16_t*)Item->Value,Item->Width,RightJustify);
-				break;				
+				break;
+			case D_Month:
+				Print_Month(*(uint8_t*)Item->Value,Item->Width);
+				break;
 			case D_Menu:
 			case D_Function:
 				UI_Puts_n(Item->Value,Item->Width);
 				break;
-			case D_CustomData:
+			case D_CustomData8:
+			case D_CustomData16:
 				((FuncPtr_arg)Item->Modified)(Item);
+				break;
+			case D_SetTime:
+				Print_Time((rtc_t *)Item->Value,DISPLAY_SEC);
 				break;
 		}
 	}
@@ -107,7 +166,7 @@ uint8_t UI_EditItem(UI_Item_t *Item)
 	uint8_t Changed=0,Quit=0,Update=1;
 	uint16_t Value;
 
-	if(Item->Flags==D_U16)
+	if((Item->Flags==D_U16)||(Item->Flags==D_CustomData16))
 		Value=*(uint16_t*)Item->Value;	
 	else
 		Value=*(uint8_t*)Item->Value;
@@ -169,13 +228,14 @@ uint8_t UI_EditItem(UI_Item_t *Item)
 		
 		if(Update||Quit)
 		{	
-			if(Item->Flags==D_U16)
+			if((Item->Flags==D_U16)||(Item->Flags==D_CustomData16))
 				*(uint16_t*)Item->Value=Value;	
 			else
 				*(uint8_t*)Item->Value=Value;
 			
 			UI_PrintItem(Item,Update||Quit);
-			time_flag &= ~(TIME_HALF_SEC|TIME_FULL_SEC);
+			time.HalfSec=0;
+			time.FullSec=0;				
 			Update = 0;
 		}
 			
@@ -196,27 +256,43 @@ uint8_t UI_Menu(UI_Menu_t *Menu)
 	do
 	{	
 		switch(Key_Get())
-		{
-			case KEY_MENU:
-
-				if(Menu->Items[Item].Flags==D_Menu)
-				{	// Item is a menu
-					UI_Menu((UI_Menu_t *)Menu->Items[Item].Modified);
-					UI_PrintItems(Menu);					
-				}
-				else if(Menu->Items[Item].Flags==D_Function)
-				{	// Item is a function call
+		{								
+			case KEY_MENU|KEY_LONG:
+				Quit = 1;
+				break;
 				
-					((FuncPtr)Menu->Items[Item].Modified)();
-					UI_PrintItems(Menu);						
-				}
-				else
+			case KEY_MENU:
+				
+				switch(Menu->Items[Item].Flags)
 				{
-					ItemModified=UI_EditItem(&Menu->Items[Item]);
-					*Menu->Items[Item].Modified|=ItemModified;
+					case D_Menu:
+						// Item is a menu
+						UI_Menu((UI_Menu_t *)Menu->Items[Item].Modified);
+						UI_PrintItems(Menu);					
+						break;
 					
-					UI_PrintItems(Menu);
-					Modified|=ItemModified;
+					case D_Function:
+						// Item is a function call
+						((FuncPtr)Menu->Items[Item].Modified)();
+						UI_PrintItems(Menu);						
+						break;
+						
+					case D_SetTime:					
+						if(*(Menu->Items[Item].Modified))
+						{
+							rtc_t *rtc = Menu->Items[Item].Value;
+							
+							RTC_SetTime(rtc->hour,rtc->min,rtc->sec);
+							*(Menu->Items[Item].Modified) = 0;
+							break;						
+						}
+					
+					default:
+						ItemModified=UI_EditItem(&Menu->Items[Item]);
+						*Menu->Items[Item].Modified|=ItemModified;
+						
+						UI_PrintItems(Menu);
+						Modified|=ItemModified;
 				}
 			
 			//	fall through to next position
@@ -240,17 +316,14 @@ uint8_t UI_Menu(UI_Menu_t *Menu)
 				else
 					Item = Menu->Size-1;				// wrap around
 				break;
-								
-			case KEY_MENU|KEY_LONG:
-				Quit = 1;
-				break;
 		}
 
 		// blink
-		if(time_flag & (TIME_HALF_SEC|TIME_FULL_SEC))
+		if(time.HalfSec||time.FullSec)
 		{
-			UI_PrintItem(&Menu->Items[Item],time_flag & TIME_FULL_SEC);
-			time_flag &= ~(TIME_HALF_SEC|TIME_FULL_SEC);
+			UI_PrintItem(&Menu->Items[Item],time.FullSec);
+			time.HalfSec=0;
+			time.FullSec=0;	
 		}		
 	} while (!Quit);
 	

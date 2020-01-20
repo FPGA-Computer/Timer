@@ -28,14 +28,17 @@
 /*
          1    11
 ----5----0----56
-00:00:00 LED
-
+A00:00:00 Alarm
+01JAN2020 Trim
 */
 
 #define SET_TIME_X		0
 #define SET_TIME_Y		0
 #define SET_LED_X			10
 #define SET_LED_Y			0
+
+#define SET_DATE_X		0
+#define SET_DATE_Y		1
 
 #define AL_TIME_X			2
 #define AL_TIME_Y			0
@@ -46,12 +49,19 @@
 #define ADC_Y					1
 #define ADC_LENGTH		4
 
-#define SET_TRIM_X		0
+#define SET_TRIM_X		10
 #define SET_TRIM_Y		1
-#define TRIMS_X				5
+#define TRIM_WIDTH		4
+
+#define TRIMS_X				4
 #define TRIMS_Y				0
-#define TRIMV_X				6
+#define TRIMV_X				5
 #define TRIMV_Y				0
+#define TRIMA_X				0
+#define TRIMA_Y				1
+
+#define DST_X					14
+#define DST_Y					0
 
 void Setup(void);
 void Display_Trim(UI_Item_t *Item);

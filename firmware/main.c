@@ -19,7 +19,8 @@
  along with this program.
 
  If not, see http://www.gnu.org/licenses/gpl-3.0.en.html 
- */ 
+ */
+ 
 #include "hardware.h"
 #include "main.h"
 
@@ -29,16 +30,19 @@ void DisplayTask(void)
 	Print_Time(&time,DISPLAY_SEC);
 	LCD_Puts(" \x0b");
 	Print_uint(ADC.Result[ADC_Sense],4,RightJustify);
-	
+
   LCD_Moveto(STATUS_X,STATUS_Y);
 	LCD_Puts((PERIPH_PORT->ODR & LED_EN)?"LED ":"    ");
-	LCD_Puts((PERIPH_PORT->ODR & MOTOR_EN)?"    ":"Pump");
+	LCD_Puts((PERIPH_PORT->ODR & MOTOR_EN)?"  ":"AX");
+	
+	LCD_Moveto(DATE_X,DATE_Y);
+	Print_Date(&time,0);	
 }
 
 void main(void)
 {	
 	// load Alarm
-	Load_Prefs(&Alarm);
+	Load_Prefs(&Prefs);
 	Init_Hardware();
 
 	while(1)
@@ -46,9 +50,9 @@ void main(void)
 		if(Key_Get() == (KEY_MENU|KEY_LONG))
 		  Setup();
 		
-		if(time_flag&TIME_SEC_FLAG)
+		if(time.SecFlag)
 		{
-			time_flag &= ~TIME_SEC_FLAG;
+			time.SecFlag = 0;
 			DisplayTask();
 		}
 	}

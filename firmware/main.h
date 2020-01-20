@@ -28,14 +28,17 @@
          1    11
 ----5----0----56
 00:00:00   00:00
-LED Pump  
+Su,01-JAN LED Pm  
 */
 
 #define CLOCK_X			0
 #define CLOCK_Y			0
 #define CLOCK_SEC		1
 
-#define STATUS_X		0
+#define DATE_X			0
+#define DATE_Y			1
+
+#define STATUS_X		11
 #define STATUS_Y		1
 
 #define TIMER_X			11

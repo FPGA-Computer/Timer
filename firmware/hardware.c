@@ -54,7 +54,6 @@ void Init_Hardware(void)
 	// Init peripherals
 	LCD_Init();
 	ADC_Init();
-	Timer_Reload();
 	Time_Init();	// Timer after ADC
 	
 	FLASH->DUKR = DATA_KEY1;

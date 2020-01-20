@@ -19,3 +19,5 @@ PCB & Layout: Creative Commons 4.0 Attribution 4.0 International
 
 See https://creativecommons.org/licenses/by/4.0/
 
+Change log
+- back port from LED clock project: NCO for better trimming, Daylight Saving Time, Date and leap year

@@ -24,14 +24,39 @@
 #ifndef TIME_H_
 #define TIME_H_
 
+#define DST
+
 typedef struct
 {
-	uint8_t hour;
-	uint8_t min;
+	uint8_t	ticks;
 	uint8_t	sec;
+	uint8_t min;
+	uint8_t hour;
+	uint8_t	day;	
+	uint8_t	month;
+	uint16_t year;
+	uint8_t dayofweek;
+		
+	// alarm
 	uint16_t al_length1;
 	uint16_t al_length2;
-} time_hms_t;
+
+	uint8_t Tick:1;
+	uint8_t LeapYear:1;
+	uint8_t SecFlag:1;
+	uint8_t HalfSec:1;
+	uint8_t FullSec:1;
+	
+#ifdef DST	
+	uint8_t DST_Enable:1;	
+	uint8_t DST_Active:1;
+	uint8_t DST_Start;
+	uint8_t DST_Stop;
+#endif
+
+} rtc_t;
+
+extern volatile rtc_t time;
 
 typedef struct
 {
@@ -40,41 +65,70 @@ typedef struct
 	uint16_t al_length1;
 	uint16_t al_length2;
 	uint16_t adc_threshold;
-	int8_t clock_trim;
-} alarm_t;
+	int16_t DDS_Adj;
+	uint8_t TimeOpt;
+} prefs_t;
 
-extern volatile uint8_t time_flag,ticks;
-extern volatile time_hms_t time;
+//extern volatile uint8_t time_flag,ticks;
 extern volatile uint16_t countdown;
-extern volatile alarm_t Alarm;
+extern volatile prefs_t Prefs;
+
+// North America DST
+// https://www.timetemperature.com/northamerica/north_america_daylight_saving_time.shtml
+
+enum DST_
+{
+	DST_Start_Month = 3,
+	DST_Start_Week = 2,
+	DST_End_Month = 11,
+	DST_End_Week = 1,
+	DST_ChangeDay	= 0,			// Sunday (not used in code)
+	DST_ChangeTime = 2			// 2am
+};
 
 void Time_Init(void);
-void Timer_Reload(void);
+void RTC(void);
+uint8_t MonthDays(uint8_t month, uint16_t year);
+uint8_t DayWeek(uint8_t Day, uint8_t Month, uint16_t Year);
+void RTC_AnnualUpdate(void);
+void DST_Check(void);
+void RTC_SetTime(uint8_t Hour, uint8_t Min, uint8_t Sec);
+void RTC_SetDate(uint8_t Day, uint8_t Month, uint16_t Year);
+void RTC_SetNCO(int16_t Adj);
 void sec2ms(uint16_t time,uint8_t *min,uint8_t *sec);
-void Print_12Hr(uint8_t hour);
-void Print_Time(time_hms_t *time,uint8_t display_sec);
 
-// TIM: 6MHz/24000 = 250Hz, 4ms
+// TIM: 12MHz/(1*60000) = 200Hz, 100ms
 
-#define TIM1_PRESCALER		1UL
 #define TIM1_RELOAD				60000UL
-#define TICKS_PER_SEC			(CPU_CLOCK/TIM1_PRESCALER/TIM1_RELOAD)
-#define TICK_RES					144
-#define TICK_RES_DIV			100
+#define TIM1_TICKS				200UL
+#define TIM1_PRESCALER		(CPU_CLOCK/TIM1_RELOAD/TIM1_TICKS)
+
+// Keep TIM1 at 200Hz for ADC, use firmware to scale down for DDS
+
+// DDS target frequency
+#define DDS_TICKS_PER_SEC	20UL
+#define TICKS_PER_SEC			10UL
+#define DDS_TICKS					(TIM1_TICKS/DDS_TICKS_PER_SEC)
+
+#define DDS_BITS					24UL
+#define DDS_CARRY					(1UL << DDS_BITS)
+#define DDS_MASK					(DDS_CARRY -1UL)
+
+#define DDS_INC						(DDS_CARRY * TICKS_PER_SEC)/DDS_TICKS_PER_SEC
 
 #define TIM1_PSCR_H				((TIM1_PRESCALER-1) >> 8)
 #define TIM1_PSCR_L				((TIM1_PRESCALER-1) & 0xff)
 
 #define TIME_SEPARATOR		':'
+#define DOW_SEPARATOR			','
+#define DATE_SEPARATOR		'-'
 
 #define TIME_HR_MAX				23
 #define TIME_HR_MIN				0
 
 #define DISPLAY_SEC				0x01
 
-enum TimeFlagBits
-{
-	TIME_SEC_FLAG = 0x01, TIME_HALF_SEC	=	0x02, TIME_FULL_SEC = 0x04
-};
+//#define CENTURY					2000
+#define YEAR_START			2020
 
 #endif

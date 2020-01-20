@@ -58,6 +58,8 @@ void LCD_Hex2(uint8_t n);
 
 void Print2d(uint8_t Value,uint8_t Format);
 void Print_uint(uint16_t Value, uint8_t width, uint8_t Format);
+void Print_Time(rtc_t *time,uint8_t display_opt);
+void Print_Date(rtc_t *time,uint8_t display_opt);
 
 void UI_PrintItem(UI_Item_t *Item, uint8_t Display);
 uint8_t UI_EditItem(UI_Item_t *Item);
@@ -65,6 +67,12 @@ uint8_t UI_Menu(UI_Menu_t *Menu);
 
 #define UI_LARGE_STEP		10
 
-enum DataFlags { D_12H, D_U8, D_U8Z, D_U16, D_Menu, D_Function, D_CustomData };
+enum DataFlags 
+{ 
+	D_12H,D_U8,D_U8Z,D_U16,D_Month,D_Menu,D_Function,D_CustomData8,
+	D_CustomData16,D_SetTime 
+};
 
+#define DOW_WIDTH 	2
+#define MONTH_WIDTH	3
 #endif

@@ -28,12 +28,12 @@ void cpy(uint8_t *d, uint8_t *s, uint8_t n)
 		*d++=*s++;
 }
 
-void Save_Prefs(alarm_t *Prefs)
+void Save_Prefs(prefs_t *Prefs)
 {
-	cpy((uint8_t *)EE_ADDR(EE_Alarm),(uint8_t *)Prefs,sizeof(alarm_t));
+	cpy((uint8_t *)EE_ADDR(EE_Alarm),(uint8_t *)Prefs,sizeof(prefs_t));
 }
 
-void Load_Prefs(alarm_t *Prefs)
+void Load_Prefs(prefs_t *Prefs)
 {
-	cpy((uint8_t *)Prefs,(uint8_t *)EE_ADDR(EE_Alarm),sizeof(alarm_t));
+	cpy((uint8_t *)Prefs,(uint8_t *)EE_ADDR(EE_Alarm),sizeof(prefs_t));
 }
