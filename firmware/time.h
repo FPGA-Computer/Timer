@@ -97,7 +97,7 @@ void RTC_SetDate(uint8_t Day, uint8_t Month, uint16_t Year);
 void RTC_SetNCO(int16_t Adj);
 void sec2ms(uint16_t time,uint8_t *min,uint8_t *sec);
 
-// TIM: 12MHz/(1*60000) = 200Hz, 100ms
+// TIM: 12MHz/(1*60000) = 200Hz, 50ms
 
 #define TIM1_RELOAD				60000UL
 #define TIM1_TICKS				200UL

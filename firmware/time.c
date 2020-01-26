@@ -113,7 +113,7 @@ void Time_Init(void)
 				{
 					time.hour = TIME_HR_MIN;
 					
-					if(time.dayofweek < 7)
+					if(time.dayofweek < 6)
 						time.dayofweek++;
 					else
 						time.dayofweek = 0;

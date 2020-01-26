@@ -43,9 +43,6 @@ enum _PD { PD1=0x02, PD2=0x04, PD3=0x08, PD4=0x10, PD5=0x20, PD6=0x40 };
 #define CPU_CLOCK								12000000UL
 #define EE_Addr									0x4000
 
-// Board specific - trims the real time clock by CLOCK_TRIM * 1.8 sec/day
-#define CLOCK_TRIM							12
-
 #define LCD_E										PC3
 #define LCD_RW									PD4
 #define LCD_DATA								(PC4|PC5|PC6|PC7)

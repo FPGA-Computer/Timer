@@ -38,7 +38,7 @@ Su,01-JAN LED Pm
 #define DATE_X			0
 #define DATE_Y			1
 
-#define STATUS_X		11
+#define STATUS_X		10
 #define STATUS_Y		1
 
 #define TIMER_X			11
