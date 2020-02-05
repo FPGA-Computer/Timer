@@ -255,6 +255,39 @@ void DST_Check(void)
 	}
 }
 
+// Quick & dirty date compare - ignore differences in # of days in the month
+int16_t DST_CmpDates(uint8_t M,uint8_t D)
+{
+	return((time.month-M)*31+(time.day-D));
+}
+
+int32_t DST_CmpTime(void)
+{
+	return((time.hour-DST_ChangeTime)*3600+time.min*60+time.sec);
+}
+
+// fix up DST state after time/data change
+void DST_FixState(void)
+{	uint8_t cmp;
+
+	cmp=DST_CmpDates(DST_Start_Month,time.DST_Start);
+
+	if(cmp<0)								// < DST start date
+		time.DST_Active = 0;
+	else if(cmp==0)					// == DST start date
+		time.DST_Active = (DST_CmpTime()>=0);
+	else										// > DST start date
+	{
+		cmp=DST_CmpDates(DST_End_Month,time.DST_Stop);	
+		
+		if(cmp<0)							// < DST end date
+			time.DST_Active = 1;
+		else if(cmp==0)				// == DST end date
+			time.DST_Active = (DST_CmpTime()< 0);
+		else									// > DST end date
+			time.DST_Active = 0;
+	}
+}
 #endif		
 
 void RTC_SetNCO(int16_t Adj)
@@ -270,6 +303,11 @@ void RTC_SetTime(uint8_t Hour, uint8_t Min, uint8_t Sec)
 	time.min =	Min;	
 	time.sec =	Sec;
 	time.ticks = TICKS_PER_SEC-1;
+	
+#ifdef DST	
+	DST_FixState();
+#endif
+
 	rim();
 }
 
@@ -284,5 +322,6 @@ void RTC_SetDate(uint8_t Day, uint8_t Month, uint16_t Year)
 	time.month = Month;	
 	time.year =	Year;
 	RTC_AnnualUpdate();
+	DST_FixState();
 	rim();
 }
