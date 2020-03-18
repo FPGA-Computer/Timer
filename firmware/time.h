@@ -96,6 +96,7 @@ void RTC_SetTime(uint8_t Hour, uint8_t Min, uint8_t Sec);
 void RTC_SetDate(uint8_t Day, uint8_t Month, uint16_t Year);
 void RTC_SetNCO(int16_t Adj);
 void sec2ms(uint16_t time,uint8_t *min,uint8_t *sec);
+void AdjustAlarm(void);
 
 // TIM: 12MHz/(1*60000) = 200Hz, 50ms
 

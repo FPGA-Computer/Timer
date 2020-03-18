@@ -263,7 +263,7 @@ int16_t DST_CmpDates(uint8_t M,uint8_t D)
 
 int32_t DST_CmpTime(void)
 {
-	return((time.hour-DST_ChangeTime)*3600+time.min*60+time.sec);
+	return((time.hour-DST_ChangeTime)*3600UL + time.min*60UL + time.sec);
 }
 
 // fix up DST state after time/data change
@@ -307,7 +307,7 @@ void RTC_SetTime(uint8_t Hour, uint8_t Min, uint8_t Sec)
 #ifdef DST	
 	DST_FixState();
 #endif
-
+	AdjustAlarm();
 	rim();
 }
 
@@ -324,4 +324,39 @@ void RTC_SetDate(uint8_t Day, uint8_t Month, uint16_t Year)
 	RTC_AnnualUpdate();
 	DST_FixState();
 	rim();
+}
+
+// Calculate 
+void AdjustAlarm(void)
+{
+	uint32_t Current_Time, Alarm_Time;
+	
+	// time in seconds 
+	Current_Time = (time.hour * 60UL +  time.min)*60UL + time.sec;
+	Alarm_Time = (Prefs.al_hour * 60UL + Prefs.al_min)*60UL;
+	
+	if(Current_Time < Alarm_Time)
+	{
+		time.al_length1 = 0;
+		time.al_length2 = 0;		
+	}
+	else		// calculate remaining alarm time
+	{
+		Alarm_Time = Current_Time - Alarm_Time;
+		
+		if(Prefs.al_length1 > Alarm_Time)
+			time.al_length1 = Prefs.al_length1 - Alarm_Time;
+		else
+			time.al_length1 = 0;
+	
+		if(Prefs.al_length2 > Alarm_Time)
+			time.al_length2 = Prefs.al_length2 - Alarm_Time;
+		else
+			time.al_length2 = 0;	
+	}
+	
+	if(time.al_length1)
+		MOTOR_ON();
+	else
+		MOTOR_OFF();	
 }

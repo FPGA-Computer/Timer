@@ -21,3 +21,7 @@ See https://creativecommons.org/licenses/by/4.0/
 
 Change log
 - back port from LED clock project: NCO for better trimming, Daylight Saving Time, Date and leap year
+
+- Mar 18 2020: Servo support + fixing alarm remainder time after time adjustment
+
+See https://hw-by-design.blogspot.com/2020/03/stm8-timer-servo-controlled-water-valve.html 

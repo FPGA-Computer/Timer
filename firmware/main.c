@@ -33,7 +33,7 @@ void DisplayTask(void)
 
   LCD_Moveto(STATUS_X,STATUS_Y);
 	LCD_Puts((PERIPH_PORT->ODR & LED_EN)?"LED ":"    ");
-	LCD_Puts((PERIPH_PORT->ODR & MOTOR_EN)?"  ":"AX");
+	LCD_Puts(MOTOR_FLAG?"AX":"  ");
 	
 	LCD_Moveto(DATE_X,DATE_Y);
 	Print_Date(&time,0);	
@@ -47,8 +47,12 @@ void main(void)
 
 	while(1)
 	{
-		if(Key_Get() == (KEY_MENU|KEY_LONG))
-		  Setup();
+		switch(Key_Get())
+		{
+			case KEY_MENU|KEY_LONG:
+				Setup();
+				break;
+		}
 		
 		if(time.SecFlag)
 		{

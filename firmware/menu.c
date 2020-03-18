@@ -126,8 +126,11 @@ void Setup(void)
 		RTC_SetNCO(new_trim);
 	
 	if(TimeModified)
+	{
 		RTC_SetTime(Set.hour,Set.min,Set.sec);
-		
+		AdjustAlarm();
+	}
+	
 	if(DateModified || DST_Modified)
 	{
 		time.DST_Enable = DST_Enable;
@@ -136,8 +139,8 @@ void Setup(void)
 	
 	if(TimerModified||(new_trim!=Prefs.DDS_Adj)||DST_Modified)
 	{	
-		Prefs.al_length1 = Alarm1_min*60+Alarm1_sec;
-		Prefs.al_length2 = (Alarm2_hour*60+Alarm2_min)*60;
+		Prefs.al_length1 = Alarm1_min*60U+Alarm1_sec;
+		Prefs.al_length2 = (Alarm2_hour*60U+Alarm2_min)*60U;
 
 		Prefs.DDS_Adj = new_trim;
 		Prefs.TimeOpt = DST_Enable;

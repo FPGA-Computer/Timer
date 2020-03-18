@@ -32,6 +32,8 @@
 #include "stm8s.h"
 #include <stdio.h>
 
+#define AUX_SERVO								// comment line for VAux control
+
 // STM8S003F3P6
 enum _PA { PA1=0x02, PA2=0x04, PA3=0x08 };
 enum _PB { PB4=0x10, PB5=0x20 };
@@ -57,8 +59,6 @@ enum _PD { PD1=0x02, PD2=0x04, PD3=0x08, PD4=0x10, PD5=0x20, PD6=0x40 };
 #define LED_EN									PD6
 #define PERIPH_PORT							GPIOD
 
-#define MOTOR_OFF()							PERIPH_PORT->ODR |= MOTOR_EN
-#define MOTOR_ON()							PERIPH_PORT->ODR &= ~MOTOR_EN
 #define LED_OFF()								PERIPH_PORT->ODR &= ~LED_EN
 #define LED_ON()								PERIPH_PORT->ODR |= LED_EN
 
@@ -70,6 +70,38 @@ enum _PD { PD1=0x02, PD2=0x04, PD3=0x08, PD4=0x10, PD5=0x20, PD6=0x40 };
 
 #define DATA_KEY1								0xAE
 #define DATA_KEY2								0x56
+
+#ifdef AUX_SERVO									// Aux control servo
+
+	#define SERVO_FREQ							50
+	#define TIM2_DIV								4
+	#define TIM2_PSC								2			// 2^2
+	#define TIM2_RELOAD							(CPU_CLOCK/(TIM2_DIV*SERVO_FREQ))
+
+// 12MHz/4 = 3MHz, resolution: 333ns
+// Servo : 1.5ms + 0.5ms* X/90 
+// Actual position determined empirically
+
+	#define SERVO_OFF								4600
+	#define SERVO_ON								2000
+
+// wait 1 sec before shut down
+	#define SERVO_SHUTDOWN					SERVO_FREQ
+
+	extern uint8_t 	ServoFlag;
+	void Servo_Init(void);
+	void Servo_State(uint8_t State);
+
+	#define MOTOR_OFF()							Servo_State(0)
+	#define MOTOR_ON()							Servo_State(1)
+	#define MOTOR_FLAG							ServoFlag
+	
+#else															// Aux control AUX regulator
+
+	#define MOTOR_OFF()							PERIPH_PORT->ODR |= MOTOR_EN
+	#define MOTOR_ON()							PERIPH_PORT->ODR &= ~MOTOR_EN
+	#define MOTOR_FLAG							!(PERIPH_PORT->ODR & MOTOR_EN)
+#endif
 
 #include "LCD.h"
 #include "time.h"

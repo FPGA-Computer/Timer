@@ -26,3 +26,10 @@
 
 @far @interrupt void ADC1_IRQ(void);
 #define IRQ22	ADC1_IRQ
+
+#include "hardware.h"
+
+#ifdef AUX_SERVO
+@far @interrupt void TIM2_IRQ(void);
+#define IRQ13	TIM2_IRQ
+#endif
