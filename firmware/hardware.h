@@ -83,10 +83,10 @@ enum _PD { PD1=0x02, PD2=0x04, PD3=0x08, PD4=0x10, PD5=0x20, PD6=0x40 };
 // Actual position determined empirically
 
 	#define SERVO_OFF								4600
-	#define SERVO_ON								2000
+	#define SERVO_ON								1400
 
-// wait 1 sec before shut down
-	#define SERVO_SHUTDOWN					SERVO_FREQ
+// wait 8 sec before shut down
+	#define SERVO_SHUTDOWN					(SERVO_FREQ*10)
 
 	extern uint8_t 	ServoFlag;
 	void Servo_Init(void);
