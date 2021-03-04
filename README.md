@@ -24,4 +24,18 @@ Change log
 
 - Mar 18 2020: Servo support + fixing alarm remainder time after time adjustment
 
+- Mar 4 2021: V2 hardware/firmware release.  V1 will no longer be maintained
+
+Hardware changes:
+
+* Supercap backup power, switcher module
+
+* Different connector for LED/sensor + Servo connector
+
+* LCD, buttons I/O changes. LCD backlight on/off control by ambient light
+
+* I2C connector
+
+* expansion connector for nRF24 (no firmware support)
+
 See https://hw-by-design.blogspot.com/2020/03/stm8-timer-servo-controlled-water-valve.html 
